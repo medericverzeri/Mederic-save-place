@@ -89,6 +89,10 @@
             return;
           }
         }
+        // Connexion/inscription réussie avec session valide : on relance l'app
+        // pour qu'elle détecte la session et passe à l'écran suivant.
+        location.reload();
+        return;
       } catch (e) {
         btn.disabled = false; btn.textContent = mode === 'in' ? 'Se connecter' : 'Créer mon compte';
         errEl.textContent = translateErr(e.message || String(e));
@@ -127,5 +131,7 @@
     root.querySelector('#bOut').addEventListener('click', onLogout);
   }
 
+  window.Auth = { consentScreen: consentScreen, authScreen: authScreen, pendingScreen: pendingScreen, blockedScreen: blockedScreen };
+})();
   window.Auth = { consentScreen: consentScreen, authScreen: authScreen, pendingScreen: pendingScreen, blockedScreen: blockedScreen };
 })();
