@@ -69,9 +69,9 @@
     const el = root.querySelector('#leaf');
     if (!el || map) return;
     map = L.map(el, { zoomControl: false, attributionControl: true }).setView([46.6, 2.3], 5);
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-      attribution: '© OpenStreetMap, © CARTO', maxZoom: 19, subdomains: 'abcd'
-    }).addTo(map);
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png?key=cb1_3zp7_1_b8d5aa290416eee6e9148d4f', {
+  attribution: '© OpenStreetMap, © CARTO', maxZoom: 19, subdomains: 'abcd'
+}).addTo(map);
     root.querySelector('#mcLocate').addEventListener('click', function () {
       if (S.myPos) map.flyTo([S.myPos.lat, S.myPos.lng], 16, { duration: 0.6 });
       else U.toast('Ta position n\u2019est pas encore disponible');
