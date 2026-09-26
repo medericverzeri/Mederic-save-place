@@ -133,5 +133,3 @@
 
   window.Auth = { consentScreen: consentScreen, authScreen: authScreen, pendingScreen: pendingScreen, blockedScreen: blockedScreen };
 })();
-  window.Auth = { consentScreen: consentScreen, authScreen: authScreen, pendingScreen: pendingScreen, blockedScreen: blockedScreen };
-})();
