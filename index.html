@@ -1,49 +1,968 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="fr">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
-<title>Maison Martin</title>
-<meta name="description" content="Le réseau privé de la famille : discussions, photos, position en direct et appels vidéo.">
-<meta name="theme-color" content="#0A0B14">
-<link rel="manifest" href="manifest.json">
-<link rel="icon" href="icons/icon-192.png">
-<link rel="apple-touch-icon" href="icons/icon-192.png">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<link rel="stylesheet" href="css/style.css">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Notre Famille</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,500;0,600;1,500&family=Karla:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --encre:#16231F;
+    --encre-clair:#223B33;
+    --papier:#F2F1EC;
+    --papier-carte:#FFFFFF;
+    --texte:#1B2420;
+    --texte-clair:#5C6660;
+    --or:#D8A648;
+    --or-fonce:#B8853A;
+    --baie:#A24B5E;
+    --sauge:#7C9885;
+    --erreur:#B4423E;
+    --rayon:14px;
+    --ombre:0 2px 10px rgba(22,35,31,0.08);
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    margin:0;
+    font-family:'Karla',sans-serif;
+    background:var(--papier);
+    color:var(--texte);
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3,.titre-serif{font-family:'Fraunces',serif;font-weight:600;letter-spacing:-0.01em;}
+  button{font-family:'Karla',sans-serif;cursor:pointer;border:none;}
+  input,textarea{font-family:'Karla',sans-serif;}
+  ::-webkit-scrollbar{width:8px;}
+  ::-webkit-scrollbar-thumb{background:#00000022;border-radius:8px;}
+
+  /* --- Ecran de chargement --- */
+  #ecranChargement{
+    position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
+    background:var(--encre);color:var(--papier);z-index:9999;
+  }
+  #ecranChargement .loader{
+    width:34px;height:34px;border-radius:50%;
+    border:3px solid rgba(242,241,236,0.25);border-top-color:var(--or);
+    animation:tourner 0.8s linear infinite;
+  }
+  @keyframes tourner{to{transform:rotate(360deg);}}
+
+  /* --- Ecran d'authentification --- */
+  #ecranAuth{
+    position:fixed;inset:0;display:none;align-items:center;justify-content:center;
+    background:radial-gradient(120% 120% at 20% 10%, var(--encre-clair) 0%, var(--encre) 60%);
+    padding:24px;
+  }
+  .carteAuth{
+    background:var(--papier-carte);border-radius:20px;box-shadow:0 20px 60px rgba(0,0,0,0.35);
+    width:100%;max-width:400px;padding:36px 32px;
+  }
+  .carteAuth h1{font-size:28px;margin:0 0 4px;color:var(--encre);}
+  .carteAuth p.souligne{color:var(--texte-clair);margin:0 0 26px;font-size:14px;}
+  .champ{margin-bottom:14px;}
+  .champ label{display:block;font-size:12px;color:var(--texte-clair);margin-bottom:6px;font-weight:700;}
+  .champ input{
+    width:100%;padding:11px 13px;border:1.5px solid #E3E1D8;border-radius:10px;font-size:15px;
+    background:#FBFAF7;transition:border-color .15s;
+  }
+  .champ input:focus{outline:none;border-color:var(--or);}
+  .btnPrincipal{
+    width:100%;padding:12px;border-radius:10px;background:var(--encre);color:var(--papier);
+    font-weight:700;font-size:15px;margin-top:6px;transition:transform .1s,background .15s;
+  }
+  .btnPrincipal:hover{background:var(--encre-clair);}
+  .btnPrincipal:active{transform:scale(0.98);}
+  .lienBascule{text-align:center;margin-top:18px;font-size:14px;color:var(--texte-clair);}
+  .lienBascule a{color:var(--baie);font-weight:700;text-decoration:none;cursor:pointer;}
+  .messageErreur{
+    background:#FBEAE9;color:var(--erreur);border-radius:8px;padding:10px 12px;font-size:13px;
+    margin-bottom:14px;display:none;
+  }
+  .noteConfidentialite{font-size:11.5px;color:var(--texte-clair);margin-top:16px;line-height:1.5;}
+
+  /* --- Application --- */
+  #appli{display:none;height:100dvh;flex-direction:column;}
+  #bandeauAnnonce{
+    background:var(--or);color:var(--encre);font-weight:700;font-size:13.5px;
+    padding:9px 16px;display:none;align-items:center;gap:8px;
+  }
+  #bandeauAnnonce span.point{width:6px;height:6px;border-radius:50%;background:var(--encre);flex-shrink:0;}
+  .disposition{display:flex;flex:1;min-height:0;}
+
+  .barreLaterale{
+    width:230px;flex-shrink:0;background:var(--encre);color:var(--papier);
+    display:flex;flex-direction:column;padding:22px 14px;
+  }
+  .marqueFamille{display:flex;align-items:center;gap:10px;padding:0 8px 22px;border-bottom:1px solid rgba(242,241,236,0.12);margin-bottom:16px;}
+  #logoFamille{
+    width:38px;height:38px;border-radius:11px;background:var(--or);color:var(--encre);
+    display:flex;align-items:center;justify-content:center;font-family:'Fraunces',serif;font-weight:600;font-size:18px;flex-shrink:0;overflow:hidden;
+  }
+  #logoFamille img{width:100%;height:100%;object-fit:cover;}
+  #nomFamilleAffiche{font-family:'Fraunces',serif;font-size:17px;font-weight:600;line-height:1.2;}
+  nav.onglets{display:flex;flex-direction:column;gap:3px;flex:1;}
+  .ongletBtn{
+    display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:10px;
+    background:transparent;color:rgba(242,241,236,0.75);font-size:14.5px;font-weight:500;text-align:left;
+    transition:background .15s,color .15s;
+  }
+  .ongletBtn .ic{font-size:17px;width:20px;text-align:center;}
+  .ongletBtn:hover{background:rgba(242,241,236,0.08);color:var(--papier);}
+  .ongletBtn.actif{background:rgba(216,166,72,0.16);color:var(--or);}
+  .piedBarre{border-top:1px solid rgba(242,241,236,0.12);padding-top:14px;display:flex;flex-direction:column;gap:3px;}
+  .piedBarre .ongletBtn{color:rgba(242,241,236,0.6);}
+
+  .zoneContenu{flex:1;min-width:0;display:flex;flex-direction:column;background:var(--papier);}
+  .entetePanneau{padding:20px 28px 16px;border-bottom:1px solid #E3E1D8;display:flex;align-items:center;justify-content:space-between;}
+  .entetePanneau h2{font-size:22px;margin:0;}
+  .panneau{flex:1;min-height:0;display:none;flex-direction:column;}
+  .panneau.actif{display:flex;}
+
+  /* Fil de discussion */
+  #zoneMessages{flex:1;overflow-y:auto;padding:20px 28px;display:flex;flex-direction:column;gap:12px;}
+  .messageBulle{max-width:62%;padding:10px 14px;border-radius:16px;background:var(--papier-carte);box-shadow:var(--ombre);align-self:flex-start;}
+  .messageBulle.moi{align-self:flex-end;background:var(--encre);color:var(--papier);}
+  .messageBulle .auteurMsg{font-size:11.5px;font-weight:700;color:var(--baie);margin-bottom:3px;}
+  .messageBulle.moi .auteurMsg{color:var(--or);}
+  .messageBulle .texteMsg{font-size:14.5px;line-height:1.4;white-space:pre-wrap;word-break:break-word;}
+  .messageBulle .metaMsg{font-size:10.5px;color:var(--texte-clair);margin-top:5px;display:flex;gap:8px;align-items:center;}
+  .messageBulle.moi .metaMsg{color:rgba(242,241,236,0.55);}
+  .metaMsg button{background:none;color:inherit;text-decoration:underline;font-size:10.5px;padding:0;opacity:.75;}
+  .barreEnvoi{padding:14px 28px 20px;display:flex;gap:10px;border-top:1px solid #E3E1D8;background:var(--papier);}
+  .barreEnvoi textarea{
+    flex:1;resize:none;border:1.5px solid #E3E1D8;border-radius:12px;padding:11px 14px;font-size:14.5px;
+    max-height:120px;background:var(--papier-carte);
+  }
+  .barreEnvoi textarea:focus{outline:none;border-color:var(--or);}
+  .btnEnvoyer{width:46px;height:46px;border-radius:12px;background:var(--baie);color:#fff;font-size:18px;flex-shrink:0;}
+
+  /* Photos */
+  #grillePhotos{flex:1;overflow-y:auto;padding:20px 28px;display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;align-content:start;}
+  .carteMediaP{position:relative;border-radius:var(--rayon);overflow:hidden;background:#fff;box-shadow:var(--ombre);aspect-ratio:1;}
+  .carteMediaP img{width:100%;height:100%;object-fit:cover;display:block;}
+  .carteMediaP .legendeP{
+    position:absolute;bottom:0;left:0;right:0;padding:8px 10px 7px;
+    background:linear-gradient(0deg,rgba(0,0,0,0.65),transparent);color:#fff;font-size:11px;
+  }
+  .carteMediaP .suppP{
+    position:absolute;top:6px;right:6px;background:rgba(0,0,0,0.55);color:#fff;
+    width:24px;height:24px;border-radius:50%;font-size:13px;display:none;
+  }
+  .btnAjoutFlottant{
+    position:absolute;bottom:26px;right:32px;width:52px;height:52px;border-radius:50%;
+    background:var(--or);color:var(--encre);font-size:22px;box-shadow:0 6px 16px rgba(216,166,72,0.5);
+  }
+
+  /* Annonces */
+  #listeAnnonces{flex:1;overflow-y:auto;padding:20px 28px;display:flex;flex-direction:column;gap:12px;}
+  .carteAnnonce{background:var(--papier-carte);border-radius:var(--rayon);padding:16px 18px;box-shadow:var(--ombre);border-left:3px solid var(--or);}
+  .carteAnnonce .metaA{font-size:11.5px;color:var(--texte-clair);margin-bottom:6px;font-weight:700;}
+  .carteAnnonce .texteA{font-size:14.5px;line-height:1.5;white-space:pre-wrap;}
+  .formAnnonce{padding:16px 28px;border-top:1px solid #E3E1D8;display:none;gap:10px;flex-direction:column;}
+  .formAnnonce textarea{border:1.5px solid #E3E1D8;border-radius:10px;padding:10px 12px;font-size:14px;resize:vertical;min-height:60px;}
+
+  /* Appels */
+  #listeMembresAppel{flex:1;overflow-y:auto;padding:16px 28px;display:flex;flex-direction:column;gap:8px;}
+  .ligneMembre{display:flex;align-items:center;gap:12px;padding:11px 14px;background:var(--papier-carte);border-radius:12px;box-shadow:var(--ombre);}
+  .avatarM{width:38px;height:38px;border-radius:50%;background:var(--encre);color:var(--or);display:flex;align-items:center;justify-content:center;font-family:'Fraunces',serif;font-weight:600;flex-shrink:0;}
+  .infoM{flex:1;min-width:0;}
+  .infoM .nomM{font-weight:700;font-size:14.5px;}
+  .infoM .statutM{font-size:11.5px;color:var(--texte-clair);display:flex;align-items:center;gap:5px;}
+  .pastilleEnLigne{width:7px;height:7px;border-radius:50%;background:var(--sauge);}
+  .pastilleHorsLigne{width:7px;height:7px;border-radius:50%;background:#C9C6BB;}
+  .btnAppelIcone{width:38px;height:38px;border-radius:50%;background:var(--papier);color:var(--encre);font-size:15px;}
+  .btnAppelIcone:disabled{opacity:.35;}
+
+  #superpositionAppel{
+    position:fixed;inset:0;background:rgba(15,20,17,0.94);z-index:600;display:none;
+    flex-direction:column;align-items:center;justify-content:center;color:#fff;padding:24px;
+  }
+  #superpositionAppel video{border-radius:16px;background:#000;max-width:90%;max-height:52vh;}
+  #videoDistant{width:min(560px,90vw);}
+  #videoLocal{position:fixed;bottom:120px;right:24px;width:130px;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,0.4);z-index:601;}
+  .etatAppel{font-family:'Fraunces',serif;font-size:20px;margin:18px 0 4px;}
+  .sousEtatAppel{color:rgba(255,255,255,0.6);font-size:13px;margin-bottom:26px;}
+  .controlesAppel{display:flex;gap:16px;}
+  .controlesAppel button{width:56px;height:56px;border-radius:50%;font-size:20px;color:#fff;}
+  .btnRaccrocher{background:var(--erreur);}
+  .btnAccepter{background:var(--sauge);}
+  .btnMuet{background:rgba(255,255,255,0.15);}
+  .btnMuet.actifM{background:var(--or);color:var(--encre);}
+
+  /* Panneau admin */
+  #superpositionAdmin{position:fixed;inset:0;background:rgba(22,35,31,0.5);z-index:700;display:none;align-items:stretch;justify-content:flex-end;}
+  #panneauAdmin{
+    width:min(420px,92vw);background:var(--papier);height:100%;overflow-y:auto;padding:26px 24px 60px;
+    box-shadow:-8px 0 30px rgba(0,0,0,0.2);
+  }
+  #panneauAdmin h2{font-size:20px;margin:0 0 4px;}
+  #panneauAdmin .sousTitreAdmin{color:var(--texte-clair);font-size:13px;margin-bottom:20px;}
+  .blocAdmin{background:var(--papier-carte);border-radius:12px;padding:16px 16px 18px;margin-bottom:16px;box-shadow:var(--ombre);}
+  .blocAdmin h3{font-size:14px;margin:0 0 12px;color:var(--baie);}
+  .blocAdmin .champ input,.blocAdmin .champ textarea{width:100%;}
+  .ligneMembreAdmin{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #EEEDE6;font-size:13.5px;}
+  .ligneMembreAdmin:last-child{border-bottom:none;}
+  .ligneMembreAdmin .nomMA{flex:1;font-weight:700;}
+  .selectRole{border:1px solid #E3E1D8;border-radius:7px;font-size:12px;padding:3px 5px;background:#fff;}
+  .btnPetit{padding:5px 10px;border-radius:7px;font-size:11.5px;font-weight:700;background:var(--papier);color:var(--texte);}
+  .btnPetit.danger{background:#FBEAE9;color:var(--erreur);}
+  .btnFermerAdmin{background:none;font-size:20px;color:var(--texte-clair);}
+  .btnLargeur{width:100%;padding:10px;border-radius:9px;background:var(--encre);color:var(--papier);font-weight:700;font-size:13.5px;margin-top:4px;}
+
+  .vide{color:var(--texte-clair);text-align:center;padding:40px 20px;font-size:14px;}
+
+  @media (max-width:760px){
+    .barreLaterale{position:fixed;left:0;top:0;bottom:0;transform:translateX(-100%);transition:transform .2s;z-index:500;}
+    .barreLaterale.ouverte{transform:translateX(0);}
+    #btnMenuMobile{display:flex;}
+    .entetePanneau{padding:14px 16px;}
+    #zoneMessages,#grillePhotos,#listeAnnonces,#listeMembresAppel{padding:14px 16px;}
+    .barreEnvoi{padding:12px 16px 16px;}
+    .messageBulle{max-width:82%;}
+  }
+  #btnMenuMobile{display:none;width:34px;height:34px;border-radius:9px;background:var(--papier-carte);box-shadow:var(--ombre);font-size:16px;align-items:center;justify-content:center;margin-right:10px;}
+</style>
 </head>
 <body>
 
-<div id="app">
-  <div id="screen" role="main"></div>
-  <nav id="tabbar" aria-label="Navigation principale"></nav>
+<div id="ecranChargement"><div class="loader"></div></div>
+
+<!-- ECRAN AUTH -->
+<div id="ecranAuth">
+  <div class="carteAuth">
+    <h1>Notre Famille</h1>
+    <p class="souligne" id="sousTitreAuth">Connecte-toi pour retrouver les tiens.</p>
+    <div class="messageErreur" id="msgErreurAuth"></div>
+
+    <form id="formConnexion">
+      <div class="champ"><label>Adresse e-mail</label><input type="email" id="ciEmail" required autocomplete="email"></div>
+      <div class="champ"><label>Mot de passe</label><input type="password" id="ciMdp" required autocomplete="current-password"></div>
+      <button class="btnPrincipal" type="submit">Se connecter</button>
+    </form>
+
+    <form id="formInscription" style="display:none;">
+      <div class="champ"><label>Prénom</label><input type="text" id="siPrenom" required autocomplete="given-name"></div>
+      <div class="champ"><label>Adresse e-mail</label><input type="email" id="siEmail" required autocomplete="email"></div>
+      <div class="champ"><label>Mot de passe (6 caractères min.)</label><input type="password" id="siMdp" minlength="6" required autocomplete="new-password"></div>
+      <button class="btnPrincipal" type="submit">Créer mon compte</button>
+    </form>
+
+    <p class="lienBascule">
+      <span id="texteBascule">Pas encore de compte ?</span> <a id="lienBascule">Créer un compte</a>
+    </p>
+    <p class="noteConfidentialite">Tes messages et photos ne sont visibles que par les membres de la famille inscrits. Un administrateur peut modérer le contenu partagé.</p>
+  </div>
 </div>
 
-<div id="callRoot" aria-label="Appel vidéo en cours"></div>
-<div id="modalBack"><div id="modalRoot"></div></div>
-<div id="toast" role="status" aria-live="polite"></div>
+<!-- APPLICATION -->
+<div id="appli">
+  <div id="bandeauAnnonce"><span class="point"></span><span id="texteBandeau"></span></div>
+  <div class="disposition">
+    <aside class="barreLaterale" id="barreLaterale">
+      <div class="marqueFamille">
+        <div id="logoFamille">N</div>
+        <div id="nomFamilleAffiche">Notre Famille</div>
+      </div>
+      <nav class="onglets">
+        <button class="ongletBtn actif" data-onglet="fil"><span class="ic">💬</span>Fil</button>
+        <button class="ongletBtn" data-onglet="photos"><span class="ic">📷</span>Photos</button>
+        <button class="ongletBtn" data-onglet="appels"><span class="ic">📞</span>Appels</button>
+        <button class="ongletBtn" data-onglet="annonces"><span class="ic">📌</span>Annonces</button>
+      </nav>
+      <div class="piedBarre">
+        <button class="ongletBtn" id="btnAdmin" style="display:none;"><span class="ic">⚙️</span>Administration</button>
+        <button class="ongletBtn" id="btnDeconnexion"><span class="ic">↩</span>Déconnexion</button>
+      </div>
+    </aside>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <main class="zoneContenu">
+      <!-- FIL -->
+      <section class="panneau actif" id="panneau-fil">
+        <div class="entetePanneau"><button id="btnMenuMobile">☰</button><h2>Fil de discussion</h2></div>
+        <div id="zoneMessages"></div>
+        <div class="barreEnvoi">
+          <textarea id="champMessage" placeholder="Écris un message à la famille…" rows="1"></textarea>
+          <button class="btnEnvoyer" id="btnEnvoyerMsg">➤</button>
+        </div>
+      </section>
 
-<script src="js/config.js"></script>
-<script src="js/util.js"></script>
-<script src="js/api.js"></script>
-<script src="js/auth.js"></script>
-<script src="js/profile.js"></script>
-<script src="js/chat.js"></script>
-<script src="js/map.js"></script>
-<script src="js/calls.js"></script>
-<script src="js/admin.js"></script>
-<script src="js/app.js"></script>
+      <!-- PHOTOS -->
+      <section class="panneau" id="panneau-photos">
+        <div class="entetePanneau"><button id="btnMenuMobile2">☰</button><h2>Photos de famille</h2></div>
+        <div id="grillePhotos"></div>
+        <button class="btnAjoutFlottant" id="btnAjoutPhoto">+</button>
+        <input type="file" id="entreePhoto" accept="image/*" style="display:none;">
+      </section>
 
+      <!-- APPELS -->
+      <section class="panneau" id="panneau-appels">
+        <div class="entetePanneau"><button id="btnMenuMobile3">☰</button><h2>Appels</h2></div>
+        <div id="listeMembresAppel"></div>
+      </section>
+
+      <!-- ANNONCES -->
+      <section class="panneau" id="panneau-annonces">
+        <div class="entetePanneau">
+          <div style="display:flex;align-items:center;"><button id="btnMenuMobile4">☰</button><h2>Annonces</h2></div>
+          <button class="btnPetit" id="btnOuvrirFormAnnonce" style="display:none;">+ Nouvelle annonce</button>
+        </div>
+        <div id="listeAnnonces"></div>
+        <div class="formAnnonce" id="formAnnonce">
+          <textarea id="texteNouvelleAnnonce" placeholder="Écris l'annonce à afficher à toute la famille…"></textarea>
+          <button class="btnLargeur" id="btnPublierAnnonce">Publier l'annonce</button>
+        </div>
+      </section>
+    </main>
+  </div>
+</div>
+
+<!-- SUPERPOSITION APPEL -->
+<div id="superpositionAppel">
+  <video id="videoDistant" autoplay playsinline></video>
+  <video id="videoLocal" autoplay playsinline muted></video>
+  <div class="etatAppel" id="etatAppelTexte">Appel en cours…</div>
+  <div class="sousEtatAppel" id="sousEtatAppelTexte"></div>
+  <div class="controlesAppel">
+    <button class="btnMuet" id="btnMuetAppel">🎤</button>
+    <button class="btnAccepter" id="btnAccepterAppel" style="display:none;">✓</button>
+    <button class="btnRaccrocher" id="btnRaccrocherAppel">✕</button>
+  </div>
+</div>
+
+<!-- SUPERPOSITION ADMIN -->
+<div id="superpositionAdmin">
+  <div id="panneauAdmin">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+      <div><h2>Administration</h2><p class="sousTitreAdmin">Tout ce que tu modifies ici est visible par toute la famille.</p></div>
+      <button class="btnFermerAdmin" id="btnFermerAdmin">✕</button>
+    </div>
+
+    <div class="blocAdmin">
+      <h3>Identité de la famille</h3>
+      <div class="champ"><label>Nom affiché</label><input type="text" id="adminNomFamille"></div>
+      <div class="champ"><label>Logo (emoji ou lettre, utilisé si aucune image)</label><input type="text" id="adminLogoTexte" maxlength="2"></div>
+      <div class="champ">
+        <label>Image du logo (remplace l'emoji si ajoutée)</label>
+        <input type="file" id="adminLogoFichier" accept="image/*">
+        <button class="btnPetit" id="btnRetirerLogo" type="button" style="margin-top:8px;">Retirer l'image actuelle</button>
+      </div>
+      <button class="btnLargeur" id="btnEnregistrerIdentite">Enregistrer</button>
+    </div>
+
+    <div class="blocAdmin">
+      <h3>Membres (<span id="compteMembres">0</span>)</h3>
+      <div id="listeMembresAdmin"></div>
+    </div>
+
+    <div class="blocAdmin">
+      <h3>Modération des messages</h3>
+      <p class="sousTitreAdmin" style="margin-bottom:10px;">Supprime un message directement depuis le fil de discussion (un lien « Supprimer » apparaît sous chaque message quand tu es connecté en tant qu'administrateur).</p>
+    </div>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
 <script>
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', function () {
-    navigator.serviceWorker.register('sw.js').catch(function () {});
+/* ==========================================================================
+   1) CONFIGURATION FIREBASE
+   Remplace les valeurs ci-dessous par celles de TON projet Firebase
+   (Console Firebase > Paramètres du projet > Tes applications > Config SDK).
+   ========================================================================== */
+const firebaseConfig = {
+  apiKey: "AIzaSyBeLvDaf9EyEuG4nIq5Kjy8Vn9adawvLE4",
+  authDomain: "famille-654c4.firebaseapp.com",
+  projectId: "famille-654c4",
+  storageBucket: "famille-654c4.firebasestorage.app",
+  messagingSenderId: "1071480946789",
+  appId: "1:1071480946789:web:43e81d522284789ef4868c"
+};
+
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+
+/* ==========================================================================
+   2) ETAT GLOBAL
+   ========================================================================== */
+let utilisateurCourant = null;   // objet Firebase Auth
+let profilCourant = null;       // { prenom, role, ... } depuis Firestore
+let estAdmin = false;
+let desabonnements = [];        // fonctions de désinscription des listeners Firestore
+let appelActifId = null;
+let connexionRTC = null;
+let fluxLocal = null;
+
+const CONFIG_STUN = { iceServers: [{ urls: ["stun:stun.l.google.com:19302", "stun:stun1.l.google.com:19302"] }] };
+
+/* ==========================================================================
+   3) UTILITAIRES
+   ========================================================================== */
+function $(id){ return document.getElementById(id); }
+function formaterHeure(date){
+  if(!date) return "";
+  const d = date.toDate ? date.toDate() : date;
+  return d.toLocaleString('fr-FR', {day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+}
+function initiales(prenom){ return (prenom||"?").trim().charAt(0).toUpperCase(); }
+function afficherErreurAuth(msg){
+  const el = $("msgErreurAuth");
+  el.textContent = msg;
+  el.style.display = "block";
+}
+function messageErreurFirebase(code){
+  const table = {
+    "auth/invalid-email":"Adresse e-mail invalide.",
+    "auth/user-not-found":"Aucun compte ne correspond à cet e-mail.",
+    "auth/wrong-password":"Mot de passe incorrect.",
+    "auth/invalid-credential":"E-mail ou mot de passe incorrect.",
+    "auth/email-already-in-use":"Un compte existe déjà avec cet e-mail.",
+    "auth/weak-password":"Le mot de passe doit contenir au moins 6 caractères."
+  };
+  return table[code] || "Une erreur est survenue. Réessaie.";
+}
+
+/* ==========================================================================
+   4) AUTHENTIFICATION
+   ========================================================================== */
+$("lienBascule").addEventListener("click", () => {
+  const versInscription = $("formConnexion").style.display !== "none";
+  $("formConnexion").style.display = versInscription ? "none" : "block";
+  $("formInscription").style.display = versInscription ? "block" : "none";
+  $("texteBascule").textContent = versInscription ? "Déjà un compte ?" : "Pas encore de compte ?";
+  $("lienBascule").textContent = versInscription ? "Se connecter" : "Créer un compte";
+  $("msgErreurAuth").style.display = "none";
+});
+
+$("formConnexion").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  $("msgErreurAuth").style.display = "none";
+  try{
+    await auth.signInWithEmailAndPassword($("ciEmail").value.trim(), $("ciMdp").value);
+  }catch(err){ afficherErreurAuth(messageErreurFirebase(err.code)); }
+});
+
+// Crée la fiche Firestore d'un membre si elle n'existe pas encore (utilisé à
+// l'inscription, et en réparation automatique si la fiche a échoué à se créer).
+async function creerFicheMembreSiAbsente(utilisateur, prenomEventuel){
+  const refMembre = db.collection("membres").doc(utilisateur.uid);
+  const dejaLa = await refMembre.get();
+  if(dejaLa.exists) return dejaLa.data();
+
+  const refConfig = db.collection("famille").doc("config");
+  let role = "membre";
+  await db.runTransaction(async (tx) => {
+    const snap = await tx.get(refConfig);
+    if(!snap.exists || !snap.data().premierMembreCree){
+      role = "admin";
+      tx.set(refConfig, { premierMembreCree:true, nomFamille:"Notre Famille", logoTexte:"N" }, { merge:true });
+    }
   });
+  const fiche = {
+    prenom: prenomEventuel || (utilisateur.email ? utilisateur.email.split("@")[0] : "Membre"),
+    email: utilisateur.email, role, bloque:false,
+    creeLe: firebase.firestore.FieldValue.serverTimestamp(),
+    dernierActif: firebase.firestore.FieldValue.serverTimestamp()
+  };
+  await refMembre.set(fiche);
+  return fiche;
+}
+
+$("formInscription").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  $("msgErreurAuth").style.display = "none";
+  const prenom = $("siPrenom").value.trim();
+  try{
+    const identifiants = await auth.createUserWithEmailAndPassword($("siEmail").value.trim(), $("siMdp").value);
+    await identifiants.user.getIdToken(true); // évite un permission-denied si le jeton n'est pas encore propagé
+    await creerFicheMembreSiAbsente(identifiants.user, prenom);
+  }catch(err){ afficherErreurAuth(messageErreurFirebase(err.code)); }
+});
+
+$("btnDeconnexion").addEventListener("click", () => auth.signOut());
+
+auth.onAuthStateChanged(async (utilisateur) => {
+  $("ecranChargement").style.display = "none";
+  detacherTousLesListeners();
+  if(utilisateur){
+    let snap = await db.collection("membres").doc(utilisateur.uid).get();
+    if(!snap.exists){
+      // Réparation automatique : la fiche n'a pas été créée (coupure réseau,
+      // latence...). On réessaie plusieurs fois avant d'abandonner.
+      for(let tentative = 0; tentative < 3 && !snap.exists; tentative++){
+        try{
+          await utilisateur.getIdToken(true);
+          await creerFicheMembreSiAbsente(utilisateur);
+          snap = await db.collection("membres").doc(utilisateur.uid).get();
+        }catch(err){ await new Promise(r => setTimeout(r, 900)); }
+      }
+    }
+    if(!snap.exists){
+      afficherErreurAuth("Un problème de connexion empêche la création de ton profil. Vérifie ta connexion internet puis réessaie de te connecter.");
+      auth.signOut();
+      return;
+    }
+    const donnees = snap.data();
+    if(donnees.bloque){
+      afficherErreurAuth("Ton compte a été bloqué par un administrateur.");
+      auth.signOut();
+      return;
+    }
+    utilisateurCourant = utilisateur;
+    profilCourant = donnees;
+    estAdmin = donnees.role === "admin";
+    $("ecranAuth").style.display = "none";
+    $("appli").style.display = "flex";
+    demarrerApplication();
+  } else {
+    utilisateurCourant = null; profilCourant = null; estAdmin = false;
+    $("appli").style.display = "none";
+    $("ecranAuth").style.display = "flex";
+  }
+});
+
+function detacherTousLesListeners(){
+  desabonnements.forEach(fn => { try{ fn(); }catch(e){} });
+  desabonnements = [];
+}
+
+/* ==========================================================================
+   5) DEMARRAGE DE L'APPLICATION (après connexion)
+   ========================================================================== */
+function demarrerApplication(){
+  $("btnAdmin").style.display = estAdmin ? "flex" : "none";
+  $("btnOuvrirFormAnnonce").style.display = estAdmin ? "inline-block" : "none";
+
+  ecouterConfigFamille();
+  ecouterMessages();
+  ecouterPhotos();
+  ecouterAnnonces();
+  ecouterMembres();
+  ecouterAppelsEntrants();
+  demarrerPresence();
+}
+
+/* --- Navigation entre onglets --- */
+document.querySelectorAll(".ongletBtn[data-onglet]").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".ongletBtn[data-onglet]").forEach(b => b.classList.remove("actif"));
+    btn.classList.add("actif");
+    document.querySelectorAll(".panneau").forEach(p => p.classList.remove("actif"));
+    $("panneau-" + btn.dataset.onglet).classList.add("actif");
+    $("barreLaterale").classList.remove("ouverte");
+  });
+});
+["btnMenuMobile","btnMenuMobile2","btnMenuMobile3","btnMenuMobile4"].forEach(id => {
+  const el = $(id); if(el) el.addEventListener("click", () => $("barreLaterale").classList.toggle("ouverte"));
+});
+
+/* ==========================================================================
+   6) CONFIG FAMILLE (nom, logo, bandeau d'annonce)
+   ========================================================================== */
+function ecouterConfigFamille(){
+  const off = db.collection("famille").doc("config").onSnapshot(snap => {
+    if(!snap.exists) return;
+    const d = snap.data();
+    document.title = d.nomFamille || "Notre Famille";
+    $("nomFamilleAffiche").textContent = d.nomFamille || "Notre Famille";
+    $("adminNomFamille").value = d.nomFamille || "";
+    $("adminLogoTexte").value = d.logoTexte || "";
+    if(d.logoUrl){ $("logoFamille").innerHTML = `<img src="${d.logoUrl}">`; }
+    else { $("logoFamille").textContent = d.logoTexte || "N"; }
+
+    if(d.derniereAnnonce && d.derniereAnnonce.texte){
+      $("texteBandeau").textContent = `${d.derniereAnnonce.auteur} a ajouté une annonce : ${d.derniereAnnonce.texte}`;
+      $("bandeauAnnonce").style.display = "flex";
+    }
+  });
+  desabonnements.push(off);
+}
+
+$("btnEnregistrerIdentite").addEventListener("click", async () => {
+  const maj = {
+    nomFamille: $("adminNomFamille").value.trim() || "Notre Famille",
+    logoTexte: $("adminLogoTexte").value.trim() || "N"
+  };
+  if(logoUrlEnAttente === null){ maj.logoUrl = firebase.firestore.FieldValue.delete(); }
+  else if(typeof logoUrlEnAttente === "string"){ maj.logoUrl = logoUrlEnAttente; }
+  await db.collection("famille").doc("config").set(maj, { merge:true });
+  logoUrlEnAttente = undefined;
+  $("adminLogoFichier").value = "";
+});
+
+let logoUrlEnAttente; // undefined = inchangé, null = à retirer, chaîne = nouvelle image
+$("adminLogoFichier").addEventListener("change", async (e) => {
+  const fichier = e.target.files[0];
+  if(!fichier) return;
+  try{ logoUrlEnAttente = await compresserImage(fichier, 200, 0.85); }
+  catch(err){ alert("Cette image est trop lourde, choisis-en une autre."); e.target.value = ""; }
+});
+$("btnRetirerLogo").addEventListener("click", () => { logoUrlEnAttente = null; $("adminLogoFichier").value = ""; });
+
+/* ==========================================================================
+   7) FIL DE DISCUSSION
+   ========================================================================== */
+function ecouterMessages(){
+  const off = db.collection("messages").orderBy("date","asc").limitToLast(200)
+    .onSnapshot(snap => {
+      const zone = $("zoneMessages");
+      zone.innerHTML = "";
+      if(snap.empty){ zone.innerHTML = '<div class="vide">Aucun message pour l\'instant. Lance la conversation !</div>'; return; }
+      snap.forEach(doc => {
+        const m = doc.data();
+        const estMoi = m.uid === utilisateurCourant.uid;
+        const bulle = document.createElement("div");
+        bulle.className = "messageBulle" + (estMoi ? " moi" : "");
+        bulle.innerHTML = `
+          <div class="auteurMsg">${!estMoi ? escHtml(m.auteur) : "Toi"}</div>
+          <div class="texteMsg">${escHtml(m.texte)}</div>
+          <div class="metaMsg"><span>${formaterHeure(m.date)}</span>${estAdmin ? `<button data-id="${doc.id}" class="btnSuppMsg">Supprimer</button>` : ""}</div>`;
+        zone.appendChild(bulle);
+      });
+      zone.scrollTop = zone.scrollHeight;
+      zone.querySelectorAll(".btnSuppMsg").forEach(b => b.addEventListener("click", () => {
+        db.collection("messages").doc(b.dataset.id).delete();
+      }));
+    });
+  desabonnements.push(off);
+}
+function escHtml(s){
+  const d = document.createElement("div"); d.textContent = s || ""; return d.innerHTML;
+}
+
+$("champMessage").addEventListener("keydown", (e) => {
+  if(e.key === "Enter" && !e.shiftKey){ e.preventDefault(); envoyerMessage(); }
+});
+$("btnEnvoyerMsg").addEventListener("click", envoyerMessage);
+async function envoyerMessage(){
+  const champ = $("champMessage");
+  const texte = champ.value.trim().slice(0,600);
+  if(!texte) return;
+  champ.value = "";
+  await db.collection("messages").add({
+    texte, auteur: profilCourant.prenom, uid: utilisateurCourant.uid,
+    date: firebase.firestore.FieldValue.serverTimestamp()
+  });
+}
+
+/* ==========================================================================
+   8) PHOTOS (compressées en base64, stockées dans Firestore — pas de
+      Firebase Storage payant nécessaire)
+   ========================================================================== */
+function ecouterPhotos(){
+  const off = db.collection("photos").orderBy("date","desc").limit(120).onSnapshot(snap => {
+    const grille = $("grillePhotos");
+    grille.innerHTML = "";
+    if(snap.empty){ grille.innerHTML = '<div class="vide">Aucune photo pour l\'instant.</div>'; return; }
+    snap.forEach(doc => {
+      const p = doc.data();
+      const carte = document.createElement("div");
+      carte.className = "carteMediaP";
+      carte.innerHTML = `<img src="${p.data}"><div class="legendeP">${escHtml(p.auteur)} · ${formaterHeure(p.date)}</div>` +
+        (estAdmin ? `<button class="suppP" style="display:flex;align-items:center;justify-content:center;" data-id="${doc.id}">✕</button>` : "");
+      grille.appendChild(carte);
+    });
+    if(estAdmin){
+      grille.querySelectorAll(".suppP").forEach(b => {
+        b.style.display = "flex";
+        b.addEventListener("click", () => db.collection("photos").doc(b.dataset.id).delete());
+      });
+    }
+  });
+  desabonnements.push(off);
+}
+
+$("btnAjoutPhoto").addEventListener("click", () => $("entreePhoto").click());
+$("entreePhoto").addEventListener("change", async (e) => {
+  const fichier = e.target.files[0];
+  if(!fichier) return;
+  e.target.value = "";
+  try{
+    const base64 = await compresserImage(fichier, 1000, 0.72);
+    await db.collection("photos").add({
+      data: base64, auteur: profilCourant.prenom, uid: utilisateurCourant.uid,
+      date: firebase.firestore.FieldValue.serverTimestamp()
+    });
+  }catch(err){ alert("Impossible d'ajouter cette photo (fichier trop lourd ou format non pris en charge)."); }
+});
+
+function compresserImage(fichier, tailleMax, qualite){
+  return new Promise((resolve, reject) => {
+    const lecteur = new FileReader();
+    lecteur.onload = (ev) => {
+      const img = new Image();
+      img.onload = () => {
+        let { width, height } = img;
+        if(width > tailleMax || height > tailleMax){
+          const ratio = Math.min(tailleMax/width, tailleMax/height);
+          width = Math.round(width*ratio); height = Math.round(height*ratio);
+        }
+        const canvas = document.createElement("canvas");
+        canvas.width = width; canvas.height = height;
+        canvas.getContext("2d").drawImage(img, 0, 0, width, height);
+        const base64 = canvas.toDataURL("image/jpeg", qualite);
+        if(base64.length > 900000){ reject(new Error("trop lourd")); return; }
+        resolve(base64);
+      };
+      img.onerror = reject;
+      img.src = ev.target.result;
+    };
+    lecteur.onerror = reject;
+    lecteur.readAsDataURL(fichier);
+  });
+}
+
+/* ==========================================================================
+   9) ANNONCES
+   ========================================================================== */
+function ecouterAnnonces(){
+  const off = db.collection("annonces").orderBy("date","desc").limit(50).onSnapshot(snap => {
+    const liste = $("listeAnnonces");
+    liste.innerHTML = "";
+    if(snap.empty){ liste.innerHTML = '<div class="vide">Aucune annonce pour le moment.</div>'; return; }
+    snap.forEach(doc => {
+      const a = doc.data();
+      const carte = document.createElement("div");
+      carte.className = "carteAnnonce";
+      carte.innerHTML = `<div class="metaA">${escHtml(a.auteur)} · ${formaterHeure(a.date)}</div><div class="texteA">${escHtml(a.texte)}</div>` +
+        (estAdmin ? `<button class="btnPetit danger btnSuppAnnonce" style="margin-top:10px;" data-id="${doc.id}">Supprimer</button>` : "");
+      liste.appendChild(carte);
+    });
+    if(estAdmin){
+      liste.querySelectorAll(".btnSuppAnnonce").forEach(b => b.addEventListener("click", () => db.collection("annonces").doc(b.dataset.id).delete()));
+    }
+  });
+  desabonnements.push(off);
+}
+$("btnOuvrirFormAnnonce").addEventListener("click", () => {
+  const f = $("formAnnonce"); f.style.display = f.style.display === "flex" ? "none" : "flex";
+});
+$("btnPublierAnnonce").addEventListener("click", async () => {
+  const texte = $("texteNouvelleAnnonce").value.trim();
+  if(!texte) return;
+  const donnee = { texte, auteur: profilCourant.prenom, uid: utilisateurCourant.uid, date: firebase.firestore.FieldValue.serverTimestamp() };
+  await db.collection("annonces").add(donnee);
+  await db.collection("famille").doc("config").set({ derniereAnnonce:{ texte, auteur: profilCourant.prenom } }, { merge:true });
+  $("texteNouvelleAnnonce").value = "";
+  $("formAnnonce").style.display = "none";
+});
+
+/* ==========================================================================
+   10) MEMBRES, PRESENCE ET PANNEAU ADMIN
+   ========================================================================== */
+let membresCache = [];
+function ecouterMembres(){
+  const off = db.collection("membres").onSnapshot(snap => {
+    membresCache = [];
+    snap.forEach(doc => membresCache.push({ id: doc.id, ...doc.data() }));
+    afficherListeAppel();
+    if(estAdmin) afficherListeMembresAdmin();
+  });
+  desabonnements.push(off);
+}
+function demarrerPresence(){
+  const majPresence = () => db.collection("membres").doc(utilisateurCourant.uid)
+    .set({ dernierActif: firebase.firestore.FieldValue.serverTimestamp() }, { merge:true });
+  majPresence();
+  setInterval(majPresence, 25000);
+}
+function estEnLigne(membre){
+  if(!membre.dernierActif || !membre.dernierActif.toDate) return false;
+  return (Date.now() - membre.dernierActif.toDate().getTime()) < 60000;
+}
+
+function afficherListeMembresAdmin(){
+  $("compteMembres").textContent = membresCache.length;
+  const zone = $("listeMembresAdmin");
+  zone.innerHTML = "";
+  membresCache.forEach(m => {
+    const estMoiMeme = m.id === utilisateurCourant.uid;
+    const ligne = document.createElement("div");
+    ligne.className = "ligneMembreAdmin";
+    ligne.innerHTML = `
+      <input type="text" class="champPrenomAdmin" data-id="${m.id}" value="${escHtml(m.prenom)}" style="flex:1;border:1px solid #E3E1D8;border-radius:7px;padding:4px 7px;font-size:13px;font-weight:700;min-width:0;">
+      ${estMoiMeme ? '<span style="font-size:11px;color:var(--texte-clair);">(toi)</span>' : ""}
+      <select class="selectRole" data-id="${m.id}" ${estMoiMeme ? "disabled" : ""}>
+        <option value="membre" ${m.role==="membre"?"selected":""}>Membre</option>
+        <option value="admin" ${m.role==="admin"?"selected":""}>Admin</option>
+      </select>
+      <button class="btnPetit danger" data-bloquer="${m.id}" ${estMoiMeme ? "disabled" : ""}>${m.bloque ? "Débloquer" : "Bloquer"}</button>`;
+    zone.appendChild(ligne);
+  });
+  zone.querySelectorAll(".champPrenomAdmin").forEach(champ => {
+    champ.addEventListener("change", () => {
+      const val = champ.value.trim();
+      if(val) db.collection("membres").doc(champ.dataset.id).set({ prenom: val }, { merge:true });
+    });
+  });
+  zone.querySelectorAll(".selectRole").forEach(sel => sel.addEventListener("change", () => {
+    db.collection("membres").doc(sel.dataset.id).set({ role: sel.value }, { merge:true });
+  }));
+  zone.querySelectorAll("[data-bloquer]").forEach(btn => btn.addEventListener("click", () => {
+    const m = membresCache.find(x => x.id === btn.dataset.bloquer);
+    db.collection("membres").doc(btn.dataset.bloquer).set({ bloque: !m.bloque }, { merge:true });
+  }));
+}
+
+$("btnAdmin").addEventListener("click", () => $("superpositionAdmin").style.display = "flex");
+$("btnFermerAdmin").addEventListener("click", () => $("superpositionAdmin").style.display = "none");
+
+/* ==========================================================================
+   11) APPELS AUDIO / VIDEO (WebRTC, signalisation via Firestore, STUN Google)
+   Limite connue : sans serveur TURN payant, un appel peut échouer si les
+   deux personnes sont derrière des réseaux très restrictifs (rare en Wi-Fi
+   ou 4G/5G classique).
+   ========================================================================== */
+function afficherListeAppel(){
+  const zone = $("listeMembresAppel");
+  zone.innerHTML = "";
+  const autres = membresCache.filter(m => m.id !== utilisateurCourant.uid && !m.bloque);
+  if(autres.length === 0){ zone.innerHTML = '<div class="vide">Aucun autre membre pour l\'instant.</div>'; return; }
+  autres.forEach(m => {
+    const enLigne = estEnLigne(m);
+    const ligne = document.createElement("div");
+    ligne.className = "ligneMembre";
+    ligne.innerHTML = `
+      <div class="avatarM">${initiales(m.prenom)}</div>
+      <div class="infoM"><div class="nomM">${escHtml(m.prenom)}</div>
+        <div class="statutM"><span class="${enLigne?'pastilleEnLigne':'pastilleHorsLigne'}"></span>${enLigne?'En ligne':'Hors ligne'}</div>
+      </div>
+      <button class="btnAppelIcone" data-id="${m.id}" data-nom="${escHtml(m.prenom)}" data-type="audio" ${enLigne?'':'disabled'}>🎤</button>
+      <button class="btnAppelIcone" data-id="${m.id}" data-nom="${escHtml(m.prenom)}" data-type="video" ${enLigne?'':'disabled'}>🎥</button>`;
+    zone.appendChild(ligne);
+  });
+  zone.querySelectorAll(".btnAppelIcone").forEach(b => b.addEventListener("click", () => lancerAppel(b.dataset.id, b.dataset.nom, b.dataset.type)));
+}
+
+async function obtenirFlux(avecVideo){
+  return navigator.mediaDevices.getUserMedia({ audio:true, video: avecVideo ? { width:480, height:360 } : false });
+}
+
+async function lancerAppel(idDestinataire, nomDestinataire, type){
+  try{ fluxLocal = await obtenirFlux(type === "video"); }
+  catch(e){ alert("Impossible d'accéder au micro/caméra."); return; }
+
+  ouvrirSuperpositionAppel(`Appel de ${nomDestinataire}…`, "En attente de réponse", type, false);
+  const refAppel = db.collection("appels").doc();
+  appelActifId = refAppel.id;
+
+  connexionRTC = new RTCPeerConnection(CONFIG_STUN);
+  fluxLocal.getTracks().forEach(t => connexionRTC.addTrack(t, fluxLocal));
+  $("videoLocal").srcObject = fluxLocal;
+  $("videoLocal").style.display = type === "video" ? "block" : "none";
+
+  connexionRTC.ontrack = (ev) => { $("videoDistant").srcObject = ev.streams[0]; };
+  const candidatsAppelant = refAppel.collection("candidatsAppelant");
+  connexionRTC.onicecandidate = (ev) => { if(ev.candidate) candidatsAppelant.add(ev.candidate.toJSON()); };
+
+  const offre = await connexionRTC.createOffer();
+  await connexionRTC.setLocalDescription(offre);
+
+  await refAppel.set({
+    de: utilisateurCourant.uid, deNom: profilCourant.prenom,
+    pour: idDestinataire, type, statut:"sonne", offre: { type: offre.type, sdp: offre.sdp },
+    cree: firebase.firestore.FieldValue.serverTimestamp()
+  });
+
+  const off = refAppel.onSnapshot(async (snap) => {
+    const d = snap.data();
+    if(!d) return;
+    if(d.statut === "accepte" && d.reponse && connexionRTC.currentRemoteDescription === null){
+      await connexionRTC.setRemoteDescription(new RTCSessionDescription(d.reponse));
+      $("etatAppelTexte").textContent = `En appel avec ${nomDestinataire}`;
+      $("sousEtatAppelTexte").textContent = "";
+    }
+    if(d.statut === "refuse" || d.statut === "raccroche"){ terminerAppel(); }
+  });
+  const offCandidats = refAppel.collection("candidatsRecepteur").onSnapshot(snap => {
+    snap.docChanges().forEach(ch => { if(ch.type === "added") connexionRTC.addIceCandidate(new RTCIceCandidate(ch.doc.data())); });
+  });
+  desabonnements.push(off, offCandidats);
+}
+
+let appelEntrantCourant = null;
+function ecouterAppelsEntrants(){
+  const off = db.collection("appels")
+    .where("pour","==", utilisateurCourant.uid)
+    .where("statut","==","sonne")
+    .onSnapshot(snap => {
+      snap.docChanges().forEach(ch => {
+        if(ch.type === "added" && !appelActifId){
+          appelEntrantCourant = { id: ch.doc.id, ...ch.doc.data() };
+          ouvrirSuperpositionAppel(`${appelEntrantCourant.deNom} t'appelle`, appelEntrantCourant.type === "video" ? "Appel vidéo" : "Appel audio", appelEntrantCourant.type, true);
+        }
+      });
+    });
+  desabonnements.push(off);
+}
+
+$("btnAccepterAppel").addEventListener("click", async () => {
+  if(!appelEntrantCourant) return;
+  const infos = appelEntrantCourant;
+  appelActifId = infos.id;
+  $("btnAccepterAppel").style.display = "none";
+  try{ fluxLocal = await obtenirFlux(infos.type === "video"); }
+  catch(e){ alert("Impossible d'accéder au micro/caméra."); terminerAppel(); return; }
+
+  connexionRTC = new RTCPeerConnection(CONFIG_STUN);
+  fluxLocal.getTracks().forEach(t => connexionRTC.addTrack(t, fluxLocal));
+  $("videoLocal").srcObject = fluxLocal;
+  $("videoLocal").style.display = infos.type === "video" ? "block" : "none";
+  connexionRTC.ontrack = (ev) => { $("videoDistant").srcObject = ev.streams[0]; };
+
+  const refAppel = db.collection("appels").doc(infos.id);
+  const candidatsRecepteur = refAppel.collection("candidatsRecepteur");
+  connexionRTC.onicecandidate = (ev) => { if(ev.candidate) candidatsRecepteur.add(ev.candidate.toJSON()); };
+
+  await connexionRTC.setRemoteDescription(new RTCSessionDescription(infos.offre));
+  const reponse = await connexionRTC.createAnswer();
+  await connexionRTC.setLocalDescription(reponse);
+  await refAppel.set({ statut:"accepte", reponse:{ type:reponse.type, sdp:reponse.sdp } }, { merge:true });
+
+  $("etatAppelTexte").textContent = `En appel avec ${infos.deNom}`;
+  $("sousEtatAppelTexte").textContent = "";
+
+  const offCandidats = refAppel.collection("candidatsAppelant").onSnapshot(snap => {
+    snap.docChanges().forEach(ch => { if(ch.type === "added") connexionRTC.addIceCandidate(new RTCIceCandidate(ch.doc.data())); });
+  });
+  const offEtat = refAppel.onSnapshot(snap => { const d = snap.data(); if(d && d.statut === "raccroche") terminerAppel(); });
+  desabonnements.push(offCandidats, offEtat);
+});
+
+$("btnRaccrocherAppel").addEventListener("click", async () => {
+  const idAAppel = appelActifId || (appelEntrantCourant && appelEntrantCourant.id);
+  if(idAAppel){
+    const statut = appelEntrantCourant && !appelActifId ? "refuse" : "raccroche";
+    db.collection("appels").doc(idAAppel).set({ statut }, { merge:true }).catch(()=>{});
+  }
+  terminerAppel();
+});
+
+$("btnMuetAppel").addEventListener("click", (e) => {
+  if(!fluxLocal) return;
+  const piste = fluxLocal.getAudioTracks()[0];
+  if(!piste) return;
+  piste.enabled = !piste.enabled;
+  e.currentTarget.classList.toggle("actifM", !piste.enabled);
+});
+
+function ouvrirSuperpositionAppel(titre, sousTitre, type, entrant){
+  $("etatAppelTexte").textContent = titre;
+  $("sousEtatAppelTexte").textContent = sousTitre;
+  $("btnAccepterAppel").style.display = entrant ? "flex" : "none";
+  $("videoDistant").style.display = type === "video" ? "block" : "none";
+  $("superpositionAppel").style.display = "flex";
+}
+function terminerAppel(){
+  if(connexionRTC){ connexionRTC.close(); connexionRTC = null; }
+  if(fluxLocal){ fluxLocal.getTracks().forEach(t => t.stop()); fluxLocal = null; }
+  appelActifId = null; appelEntrantCourant = null;
+  $("superpositionAppel").style.display = "none";
+  $("videoDistant").srcObject = null; $("videoLocal").srcObject = null;
 }
 </script>
 </body>
