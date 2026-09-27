@@ -130,6 +130,7 @@
         '<button class="ic-btn accent" id="cvSend" style="display:none">' + U.ic('send', 20) + '</button>' +
       '</div>' +
       '<input type="file" id="cvFile" accept="image/*,video/*" style="display:none">' +
+      '<input type="file" id="cvAudioCapture" accept="audio/*" capture style="display:none">' +
       '<div class="attach-sheet" id="cvSheet"></div>';
 
     if (other) Profile.renderAvatar(root.querySelector('#cvAv'), other, 34);
@@ -154,6 +155,18 @@
       const f = e.target.files[0]; if (f) handleFile(root, f, isGroup ? null : key);
       e.target.value = '';
     });
+        root.querySelector('#cvAudioCapture').addEventListener('change', async function (e) {
+      const f = e.target.files[0];
+      e.target.value = '';
+      if (!f) return;
+      U.toast('Envoi du vocal…');
+      try {
+        const ext = (f.name.split('.').pop() || 'm4a').toLowerCase();
+        const path = await API.upload(f, ext, S.me.id + '/chat');
+        await API.send({ recipient_id: isGroup ? null : key, kind: 'audio', media_path: path });
+      } catch (err) { U.toast('Échec de l\u2019envoi du vocal'); }
+    });
+    
     holdToRecord(root, micBtn, isGroup ? null : key);
 
     const more = root.querySelector('#cvMore');
@@ -361,7 +374,11 @@
         recording = true; recStart = Date.now();
         btn.classList.add('rec-on');
         U.toast('Enregistrement… relâche pour envoyer');
-      } catch (e) { alert('ERREUR MICRO: ' + e.name + ' — ' + e.message); }
+        } catch (e) {
+        const input = root.querySelector('#cvAudioCapture');
+        if (input) input.click();
+        else U.toast('Micro indisponible');
+      }
     }
     async function stop(send) {
       if (!recording || !mediaRec) return;
