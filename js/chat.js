@@ -361,7 +361,7 @@
         recording = true; recStart = Date.now();
         btn.classList.add('rec-on');
         U.toast('Enregistrement… relâche pour envoyer');
-      } catch (e) { U.toast('Micro indisponible'); }
+      } catch (e)       } catch (e) { alert('ERREUR MICRO: ' + e.name + ' — ' + e.message); }
     }
     async function stop(send) {
       if (!recording || !mediaRec) return;
